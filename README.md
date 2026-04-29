@@ -148,6 +148,26 @@ without also having to hold M4.
 
 ---
 
+## Heads-up if you build a UI for the hotkey fields
+
+If you put a "click and press a key" rebind picker in front of
+`Config::hotkey_vk` or `Config::autostrafe_vk`, watch out for the
+**mouse-button debounce** foot-gun: the same click that opens your
+"press a key now" prompt is still visible to
+`GetAsyncKeyState(VK_LBUTTON)` for one frame after, so a naive
+scan-all-vks loop will instantly capture Mouse 1 and exit before
+the user actually presses anything.
+
+Fix: track "have I seen VK_LBUTTON released since this picker
+opened" and don't accept any vk until that's true. Then accept
+anything (Mouse 1 included). One bool per active picker is enough.
+
+(Not a bug in this module -- bhop happily takes any vk you put
+in. It's a UI problem worth flagging because everyone who wires
+up a picker hits it once.)
+
+---
+
 ## What it doesn't do
 
 - **Doesn't read memory.** You wire that. We don't even include the
