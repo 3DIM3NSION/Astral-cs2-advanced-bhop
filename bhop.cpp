@@ -76,13 +76,25 @@ void Tick(const Config& cfg, const Inputs& in) {
     static int  g_alt         = -1;     // -1 none, 0 left, 1 right
 
     // ----- Master gates ------------------------------------------------------
-    if (!cfg.enabled || !in.game_focused) {
-        // Release any synthetic A/D we might be holding so they don't
-        // leak into the next focused window.
+    // Disabled -> reset all state and bail. User toggle wins.
+    if (!cfg.enabled) {
         if (g_strafe_l) HoldKey(kStrafeL, false, g_strafe_l);
         if (g_strafe_r) HoldKey(kStrafeR, false, g_strafe_r);
         g_chain_live = false;
         g_knife_done = false;
+        g_was_ground = true;
+        return;
+    }
+    // Focus loss -> always release synthetic A/D so they don't leak into
+    // whatever stole focus, but PRESERVE chain_live + knife_done. If we
+    // reset them here and the user alt-tabbed mid-chain with auto-knife
+    // active, they come back stuck on knife forever (chain-end branch
+    // later sees knife_done=false and skips the lastinv tap). Preserving
+    // lets the normal "!active -> tap lastinv" path fire on focus regain
+    // when the user releases the bhop hotkey, swapping back as expected.
+    if (!in.game_focused) {
+        if (g_strafe_l) HoldKey(kStrafeL, false, g_strafe_l);
+        if (g_strafe_r) HoldKey(kStrafeR, false, g_strafe_r);
         g_was_ground = true;
         return;
     }
